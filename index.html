@@ -3,132 +3,122 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hệ thống Giám sát IoT 2 Cảm biến (HC-SR04 & PIR)</title>
+  <title>Hệ thống Giám sát IoT 2 Cảm biến (ThingSpeak Live · HC-SR04 & PIR)</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header class="topbar">
     <div>
-      <h1>Hệ thống Giám sát IoT 2 Cảm biến (HC-SR04 & PIR)</h1>
-      <p class="sub">ESP32 · Đo cự ly & Phát hiện chuyển động · Còi thông minh dạng tìm xe ô tô</p>
+      <h1>Hệ thống Giám sát IoT 2 Cảm biến (HC-SR04 &amp; PIR)</h1>
+      <p class="sub">Dữ liệu thực tế từ ThingSpeak (Channel 3576953) · Điều khiển Còi thông minh kiểu Smartkey</p>
     </div>
     <div class="status" id="statusBox">
       <span class="dot" id="statusDot"></span>
-      <span id="statusText">Đang chạy</span>
+      <span id="statusText">Đang kết nối ThingSpeak...</span>
     </div>
   </header>
 
   <main>
     <section class="card controls">
       <div class="controls-row">
-        <button class="btn primary" id="btnToggle">⏸ Tạm dừng</button>
-        <button class="btn" id="btnReset">↺ Làm mới</button>
+        <button class="btn primary" id="btnToggle">⏸ Tạm dừng đồng bộ</button>
+        <button class="btn" id="btnRefresh">⟳ Đồng bộ ngay</button>
         <button class="btn" id="btnExport">⬇ Xuất CSV</button>
 
-        <label>Chu kỳ đọc
-          <select id="interval">
-            <option value="500">0,5 giây</option>
-            <option value="1000" selected>1 giây</option>
-            <option value="2000">2 giây</option>
-            <option value="5000">5 giây</option>
+        <label>Chu kỳ đọc ThingSpeak
+          <select id="pollInterval">
+            <option value="3000">3 giây</option>
+            <option value="5000" selected>5 giây</option>
+            <option value="10000">10 giây</option>
+            <option value="15000">15 giây</option>
+          </select>
+        </label>
+
+        <label>Số bản ghi tải về
+          <select id="resultLimit">
+            <option value="30">30 mẫu</option>
+            <option value="60" selected>60 mẫu</option>
+            <option value="100">100 mẫu</option>
+            <option value="200">200 mẫu</option>
           </select>
         </label>
 
         <label>Ngưỡng cảnh báo (cm)
           <input id="threshold" type="number" min="2" max="400" value="15" />
         </label>
-
-        <label>Kịch bản mô phỏng
-          <select id="scenario">
-            <option value="random" selected>Ngẫu nhiên (vật di chuyển)</option>
-            <option value="approach">Vật tiến lại gần (xâm nhập)</option>
-            <option value="stable">Vật đứng yên / không người</option>
-            <option value="intruder">Đột nhập bất ngờ (PIR + cự ly gần)</option>
-          </select>
-        </label>
       </div>
 
       <div class="manual-controls-row">
-        <div class="control-group">
-          <span class="group-title">Bật/Tắt Cảm biến bằng tay:</span>
-          <div class="btn-group">
-            <button class="btn-toggle active" id="toggleHcsr04">📡 HC-SR04: BẬT</button>
-            <button class="btn-toggle active" id="togglePir">👁 PIR: BẬT</button>
-            <button class="btn" id="btnTriggerPir">⚡ Kích hoạt PIR tức thì</button>
+        <div class="control-group horn-group">
+          <div class="group-head">
+            <span class="group-title">Điều khiển Còi thông minh (Kiểu Smartkey xe máy)</span>
+            <span class="mode-pill auto" id="modeBadge">🤖 Chế độ: AUTO</span>
+          </div>
+          <div class="horn-wrapper">
+            <div class="horn-actions">
+              <button class="btn btn-horn chirp" id="btnSmartHorn">
+                <span class="horn-icon" id="hornIcon">📢</span>
+                <span id="hornText">Kêu còi tìm xe (2,5s)</span>
+              </button>
+              <select id="chirpDuration" class="duration-select" title="Thời gian kêu còi tìm xe">
+                <option value="2000">2 giây</option>
+                <option value="2500" selected>2,5 giây</option>
+                <option value="3000">3 giây</option>
+              </select>
+              <button class="btn btn-auto hidden" id="btnBackAuto">↩ Về Auto</button>
+            </div>
+            <span class="horn-desc" id="hornDesc">Mặc định AUTO theo dữ liệu cảm biến. Khi còi tắt: bấm để kêu 2–3 giây rồi tự ngắt. Khi đang kêu: bấm để tắt còi tạm thời.</span>
           </div>
         </div>
 
-        <div class="control-group horn-group">
-          <span class="group-title">Còi thông minh (Bật/Tắt bằng tay kiểu tìm xe ô tô):</span>
-          <div class="horn-wrapper">
-            <button class="btn btn-horn chirp" id="btnSmartHorn">
-              <span class="horn-icon" id="hornIcon">📢</span>
-              <span id="hornText">Thử còi / Tìm xe (Bíp ngắn)</span>
-            </button>
-            <span class="horn-desc" id="hornDesc">Bấm khi bình thường: còi bíp ngắn 1,5s rồi tự tắt. Bấm khi đang báo động: tắt còi tạm thời.</span>
+        <div class="control-group">
+          <span class="group-title">Điều khiển Đèn &amp; Âm thanh trình duyệt</span>
+          <div class="btn-group">
+            <button class="btn-toggle" id="btnLedToggle">💡 Lệnh đèn (field5): AUTO</button>
+            <button class="btn-toggle active" id="btnWebSound">🔊 Âm thanh web: BẬT</button>
           </div>
+          <span class="horn-desc" id="commandQueueStatus">Sẵn sàng gửi lệnh điều khiển tới ThingSpeak (field5 / field6).</span>
         </div>
       </div>
     </section>
 
     <section class="card cloud">
       <div class="cloud-head">
-        <h2>Lưu dữ liệu lên cloud (ThingSpeak)</h2>
-        <span class="badge" id="cloudBadge">Chưa bật</span>
+        <h2>Trạng thái ThingSpeak Live (Channel #3576953)</h2>
+        <span class="badge on" id="cloudBadge">Sẵn sàng</span>
       </div>
-      <div class="controls-row">
-        <label>Channel ID
-          <input id="channelId" type="text" placeholder="VD: 1234567" />
-        </label>
-        <label>Write API Key
-          <input id="writeKey" type="password" placeholder="Dùng để gửi dữ liệu" />
-        </label>
-        <label>Read API Key
-          <input id="readKey" type="password" placeholder="Bỏ trống nếu kênh public" />
-        </label>
-        <label>Chu kỳ gửi
-          <select id="uploadInterval">
-            <option value="15" selected>15 giây</option>
-            <option value="20">20 giây</option>
-            <option value="30">30 giây</option>
-            <option value="60">60 giây</option>
-          </select>
-        </label>
-        <button class="btn primary" id="btnCloud">☁ Bật lưu cloud</button>
-        <button class="btn" id="btnLoadCloud">⟳ Tải dữ liệu từ cloud</button>
-      </div>
-      <p class="note">Mỗi lần gửi: field1 = khoảng cách HC-SR04 (cm), field2 = mức cảnh báo (0 an toàn, 1 chú ý, 2 nguy hiểm), field3 = PIR (0 yên tĩnh, 1 chuyển động), field4 = còi báo (0 tắt, 1 hú báo động, 2 tắt tạm thời, 3 tìm xe), field5 = đèn LED (0 tắt, 1 bật), field6 = khoảng cách trung bình (cm). Gói miễn phí ThingSpeak cho ghi tối đa 1 lần mỗi 15 giây.</p>
       <div class="cloud-stats">
-        <div><span class="label">Đã gửi thành công</span><b id="sentCount">0</b></div>
-        <div><span class="label">Lần gửi gần nhất</span><b id="lastSent">--</b></div>
-        <div><span class="label">Lần gửi tiếp theo</span><b id="nextSend">--</b></div>
+        <div><span class="label">Entry mới nhất</span><b id="latestEntry">--</b></div>
+        <div><span class="label">Cập nhật gần nhất</span><b id="lastUpdated">--</b></div>
+        <div><span class="label">Trạng thái lệnh ghi</span><b id="writeStatus">Sẵn sàng</b></div>
       </div>
+      <p class="note">Ánh xạ kênh ThingSpeak #3576953: <b>field1</b> = PIR (0/1), <b>field2</b> = Khoảng cách HC-SR04 (cm, -1 là ngoài tầm), <b>field3</b> = Đèn thực tế (0/1), <b>field4</b> = Còi thực tế (0/1), <b>field5</b> = Lệnh bật đèn (0/1), <b>field6</b> = Lệnh bật còi (0/1).</p>
       <ul class="log" id="cloudLog"></ul>
     </section>
 
     <section class="stats">
       <div class="card stat main" id="currentCard">
-        <span class="label">Khoảng cách (HC-SR04)</span>
+        <span class="label">Khoảng cách (HC-SR04 · field2)</span>
         <span class="value" id="current">--</span>
-        <span class="hint" id="levelText">--</span>
+        <span class="hint" id="levelText">Đang chờ dữ liệu...</span>
       </div>
       <div class="card stat" id="pirCard">
-        <span class="label">Chuyển động (PIR)</span>
-        <span class="value small" id="pirStatus">Yên tĩnh</span>
-        <span class="hint" id="pirDetail">Không có người</span>
+        <span class="label">Chuyển động (PIR · field1)</span>
+        <span class="value small" id="pirStatus">--</span>
+        <span class="hint" id="pirDetail">Đang chờ dữ liệu...</span>
       </div>
       <div class="card stat" id="buzzerCard">
-        <span class="label">Còi báo (Buzzer)</span>
+        <span class="label">Còi báo (field4 / Điều khiển)</span>
         <span class="value small" id="buzzer">TẮT</span>
-        <span class="hint" id="buzzerHint">Trạng thái an toàn</span>
+        <span class="hint" id="buzzerHint">Chế độ Auto</span>
       </div>
       <div class="card stat" id="ledCard">
-        <span class="label">Đèn LED cảnh báo</span>
+        <span class="label">Đèn LED (field3)</span>
         <div class="led-wrapper">
           <span class="led-light" id="ledLight"></span>
           <span class="value small" id="ledStatus">TẮT</span>
         </div>
-        <span class="hint" id="ledHint">Bình thường</span>
+        <span class="hint" id="ledHint">Theo ThingSpeak</span>
       </div>
       <div class="card stat">
         <span class="label">Khoảng cách TB</span>
@@ -136,36 +126,36 @@
         <span class="hint" id="minMaxHint">Min: -- · Max: --</span>
       </div>
       <div class="card stat">
-        <span class="label">Tổng mẫu đo</span>
+        <span class="label">Mẫu 2 cảm biến</span>
         <span class="value small" id="count">0</span>
-        <span class="hint" id="activeSensors">2/2 cảm biến bật</span>
+        <span class="hint" id="validDistCount">HC-SR04 hợp lệ: 0</span>
       </div>
     </section>
 
     <section class="card report-card">
       <div class="report-head">
-        <h2>📊 Báo cáo Thống kê Hoạt động Hệ thống</h2>
-        <span class="badge" id="reportTimeBadge">Thời gian chạy: 00:00</span>
+        <h2>📊 Thống kê Dữ liệu Thực tế 2 Cảm biến (ThingSpeak)</h2>
+        <span class="badge" id="reportTimeBadge">Phạm vi: 0 mẫu</span>
       </div>
       <div class="report-grid">
         <div class="report-item danger">
           <span class="report-num" id="repAlarms">0</span>
-          <span class="report-lbl">Lần Báo động Nguy hiểm</span>
+          <span class="report-lbl">Mẫu Nguy hiểm / Còi kêu</span>
         </div>
         <div class="report-item warn">
           <span class="report-num" id="repPirs">0</span>
-          <span class="report-lbl">Lần PIR Phát hiện Chuyển động</span>
+          <span class="report-lbl">Lượt PIR Phát hiện (1)</span>
         </div>
         <div class="report-item mute">
           <span class="report-num" id="repMutes">0</span>
-          <span class="report-lbl">Lần Tắt còi Tạm thời (Mute)</span>
+          <span class="report-lbl">Lần Tắt còi Tạm thời</span>
         </div>
         <div class="report-item chirp">
           <span class="report-num" id="repChirps">0</span>
-          <span class="report-lbl">Lần Thử còi Tìm xe</span>
+          <span class="report-lbl">Lần Kêu còi 2–3s (Tìm xe)</span>
         </div>
         <div class="report-item safe">
-          <span class="report-num" id="repSafeRate">100%</span>
+          <span class="report-num" id="repSafeRate">0%</span>
           <span class="report-lbl">Tỷ lệ Trạng thái An toàn</span>
         </div>
       </div>
@@ -174,63 +164,44 @@
     <section class="charts">
       <div class="card chart wide">
         <div class="chart-header">
-          <h2>Biểu đồ đường kép (Dual-Axis) – Khoảng cách & Chuyển động PIR theo thời gian</h2>
-          <span class="chart-sub">Trục trái: Cự ly HC-SR04 (cm) · Trục phải: Logic PIR (0: Yên tĩnh, 1: Có chuyển động)</span>
+          <h2>Biểu đồ đường kép (Dual-Axis) – Dữ liệu HC-SR04 &amp; PIR từ ThingSpeak</h2>
+          <span class="chart-sub">Trục trái: Khoảng cách HC-SR04 (cm) · Trục phải: PIR (0: Yên tĩnh, 1: Có chuyển động)</span>
         </div>
         <div class="chart-box"><canvas id="lineChart"></canvas></div>
       </div>
       <div class="card chart">
-        <h2>Biểu đồ cột – Phân bố cự ly & Số lần phát hiện chuyển động</h2>
+        <h2>Biểu đồ cột – Phân bố cự ly HC-SR04 &amp; Lượt PIR</h2>
         <div class="chart-box"><canvas id="barChart"></canvas></div>
       </div>
       <div class="card chart">
-        <h2>Biểu đồ tròn – Tỉ lệ các trạng thái hệ thống</h2>
+        <h2>Biểu đồ tròn – Tỉ lệ trạng thái 2 cảm biến</h2>
         <div class="chart-box"><canvas id="pieChart"></canvas></div>
       </div>
     </section>
 
     <section class="card">
-      <h2>10 mẫu gần nhất</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Thời gian</th>
-            <th>Khoảng cách (cm)</th>
-            <th>Cảm biến PIR</th>
-            <th>Mức cảnh báo</th>
-            <th>Còi báo</th>
-            <th>Đèn LED</th>
-            <th>Ghi chú</th>
-          </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-      </table>
-    </section>
-
-    <section class="card">
-      <h2>Dữ liệu đã lưu trên cloud (20 bản ghi gần nhất)</h2>
+      <h2>Dữ liệu chi tiết 2 cảm biến từ ThingSpeak (20 bản ghi gần nhất)</h2>
       <table>
         <thead>
           <tr>
             <th>Entry</th>
             <th>Thời gian</th>
-            <th>Khoảng cách (cm)</th>
-            <th>Mức</th>
-            <th>PIR</th>
-            <th>Còi báo</th>
-            <th>Đèn LED</th>
-            <th>TB cự ly (cm)</th>
+            <th>PIR (field1)</th>
+            <th>Khoảng cách HC-SR04 (field2)</th>
+            <th>Đèn (field3)</th>
+            <th>Còi (field4)</th>
+            <th>Lệnh Đèn / Còi (f5/f6)</th>
+            <th>Mức cảnh báo</th>
           </tr>
         </thead>
-        <tbody id="cloudBody">
-          <tr><td colspan="8" class="empty">Chưa tải dữ liệu từ cloud.</td></tr>
+        <tbody id="tableBody">
+          <tr><td colspan="8" class="empty">Đang tải dữ liệu từ ThingSpeak...</td></tr>
         </tbody>
       </table>
     </section>
   </main>
 
-  <footer>BTL giữa kỳ IoT – Nhóm 10 – D24TXCN05-K</footer>
+  <footer>BTL giữa kỳ IoT – Nhóm 10 – D24TXCN05-K · ThingSpeak Channel 3576953</footer>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="app.js"></script>

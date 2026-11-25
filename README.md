@@ -1,4 +1,4 @@
-# Hệ thống Giám sát & Cảnh báo IoT (ESP32 · HC-SR04 & PIR)
+# Hệ thống Giám sát & Cảnh báo IoT (ESP32 · HC-SR04 & PIR · ThingSpeak Live)
 
 > **Báo cáo Bài tập lớn Giữa kỳ – Môn IoT và Ứng dụng (PTIT)**  
 > **Lớp:** D24TXCN05-K – **Nhóm 10**  
@@ -7,55 +7,34 @@
 ---
 
 ## 📌 Giới thiệu Dự án
-Dự án xây dựng ứng dụng web IoT mô phỏng và trực quan hóa dữ liệu thu thập từ **2 cảm biến** (Cảm biến khoảng cách siêu âm **HC-SR04** và Cảm biến chuyển động hồng ngoại **PIR**), tích hợp cơ cấu điều khiển **Còi thông minh (Smart Buzzer)** dạng tìm xe ô tô và lưu trữ dữ liệu lên nền tảng đám mây **ThingSpeak**.
+Ứng dụng web giám sát và điều khiển trực tiếp qua **ThingSpeak** cho hệ thống 2 cảm biến (**HC-SR04** đo khoảng cách siêu âm và **PIR** phát hiện chuyển động hồng ngoại), tích hợp cơ cấu điều khiển **Còi thông minh kiểu Smartkey xe máy** (mặc định Auto, tắt còi tạm thời khi đang báo động, hoặc kích hoạt kêu 2–3 giây tìm xe khi còi đang tắt).
 
 ---
 
-## ✨ Các tính năng nổi bật
+## ✨ Các tính năng chính
 
-### 1. Giám sát Đồng thời 2 Cảm biến
-- **HC-SR04**: Đo khoảng cách vật thể phía trước (2 – 400 cm).
-- **PIR (HC-SR501)**: Phát hiện chuyển động của người/vật thể trong khu vực giám sát (0: Yên tĩnh, 1: Có chuyển động).
-- **Điều khiển Bật/Tắt Cảm biến bằng tay**: Cho phép bật/tắt độc lập từng cảm biến hoặc kích hoạt chuyển động tức thì để kiểm thử.
+### 1. Đồng bộ Dữ liệu Trực tiếp từ ThingSpeak (Channel `3576953`)
+- Tự động đọc trực tiếp dữ liệu đầy đủ của cả 2 cảm biến và trạng thái mạch từ ThingSpeak:
+  - `field1`: Cảm biến PIR (`0`: Yên tĩnh, `1`: Có chuyển động)
+  - `field2`: Khoảng cách HC-SR04 (`cm`, giá trị `-1` hiển thị Ngoài tầm)
+  - `field3`: Trạng thái Đèn thực tế trên mạch (`0`: Tắt, `1`: Bật)
+  - `field4`: Trạng thái Còi thực tế trên mạch (`0`: Tắt, `1`: Đang kêu)
+  - `field5`: Lệnh điều khiển Đèn (`0`/`1`)
+  - `field6`: Lệnh điều khiển Còi (`0`/`1`)
 
-### 2. Cơ chế Còi thông minh kiểu Tìm xe ô tô (Adaptive Smart Buzzer)
-- **Khi đang có báo động (Nguy hiểm)**: Nút bấm tự chuyển sang trạng thái `🔕 Tắt còi tạm thời (Mute)` – bấm nút lập tức ngắt tiếng còi hú để tránh gây ồn, hệ thống chuyển sang cảnh báo im lặng (đèn vàng/chú ý).
-- **Khi đang bình thường / an toàn**: Nút bấm hiển thị `📢 Thử còi / Tìm xe (Bíp ngắn)` – bấm nút còi sẽ chỉ phát tín hiệu bíp ngắn (1.5 giây) rồi tự động tắt, kèm nháy đèn xanh lam định vị.
+### 2. Điều khiển Manual kiểu Smartkey xe máy (Mặc định AUTO)
+- **Chế độ mặc định `AUTO`**: Tự động hiển thị và cảnh báo theo dữ liệu cảm biến từ ThingSpeak.
+- **Khi còi đang kêu / báo động**: Nút chuyển sang `🔕 Tắt còi tạm thời (Mute)` — bấm để ngắt còi tạm thời và gửi lệnh `field6=0` lên ThingSpeak (có nút `↩ Về Auto` hoặc tự động quay về Auto khi hết nguy hiểm).
+- **Khi còi đang tắt**: Nút hiển thị `📢 Kêu còi tìm xe (2,5s)` (chọn được `2s / 2,5s / 3s`) — bấm để gửi `field6=1`, phát tiếng còi định vị trên trình duyệt và tự động ngắt về `AUTO` (`field6=0`) sau 2–3 giây.
+- **Hàng đợi xử lý giới hạn 15 giây của ThingSpeak**: Tự động chờ cooldown 15s nếu gửi hai lệnh liên tiếp (như `field6=1` rồi `field6=0`) để không bị mất lệnh.
 
-### 3. Đồ thị & Báo cáo Thống kê
-- **Line Chart kép (Dual-Axis)**: Trục trái đo Cự ly (cm), Trục phải đo Logic PIR (0/1).
-- **Bar Chart**: Phân bố cự ly theo các khoảng cự ly & số lượt phát hiện chuyển động.
-- **Doughnut Chart**: Tỉ lệ các trạng thái hệ thống (An toàn, Chú ý, Nguy hiểm, Đã tắt tạm thời).
-- **Khung Báo cáo Thống kê**: Tóm tắt tổng số lần báo động, số lần PIR kích hoạt, số lần tắt còi tạm thời, số lần tìm xe và tỷ lệ an toàn.
-- **Xuất dữ liệu CSV**: Hỗ trợ xuất toàn bộ lịch sử mẫu đo ra file CSV chuẩn UTF-8 BOM hiển thị tiếng Việt trên Excel.
-
-### 4. Tích hợp Cloud ThingSpeak
-- Gửi dữ liệu định kỳ lên ThingSpeak qua API với 6 trường:
-  - `field1`: Khoảng cách HC-SR04 (cm)
-  - `field2`: Mức cảnh báo (0 An toàn, 1 Chú ý, 2 Nguy hiểm)
-  - `field3`: Cảm biến PIR (0 Yên tĩnh, 1 Chuyển động)
-  - `field4`: Trạng thái Còi (0 Tắt, 1 Hú, 2 Tắt tạm thời, 3 Tìm xe)
-  - `field5`: Đèn LED (0 Tắt, 1 Bật)
-  - `field6`: Khoảng cách trung bình chu kỳ (cm)
-- Tải và xem lại 20 bản ghi mới nhất từ Cloud ngay trên web.
+### 3. Đồ thị, Thống kê & Xuất CSV
+- **Line Chart kép (Dual-Axis)**: Khoảng cách HC-SR04 (cm) và tín hiệu PIR (`0`/`1`) theo thời gian thực.
+- **Bar Chart & Doughnut Chart**: Phân bố khoảng cách, số lần ngoài tầm, số lượt PIR phát hiện và tỉ lệ trạng thái hệ thống.
+- **Bảng 20 bản ghi mới nhất & Xuất CSV**: Xuất toàn bộ dữ liệu 2 cảm biến và lệnh điều khiển từ ThingSpeak ra file CSV chuẩn UTF-8 BOM.
 
 ---
 
 ## 🚀 Hướng dẫn Chạy ứng dụng
-1. Clone repository về máy:
-   ```bash
-   git clone https://github.com/Wanlee199/IoT.git
-   ```
-2. Mở file `index.html` trực tiếp bằng bất kỳ trình duyệt web nào (Chrome, Edge, Firefox...).
-3. Không cần cài đặt server hay cấu hình phức tạp (chạy hoàn toàn Client-side với thư viện Chart.js qua CDN).
-
----
-
-## 📂 Cấu trúc Thư mục
-```
-├── index.html               # Giao diện chính của ứng dụng
-├── style.css                # Tùy biến kiểu dáng giao diện hiện đại & responsive
-├── app.js                   # Logic mô phỏng 2 cảm biến, còi thông minh, Chart.js & ThingSpeak
-├── Bao-cao-BT-giuaky.docx   # Báo cáo BTL chi tiết theo 10 bước thiết kế IoT
-└── README.md                # Tài liệu hướng dẫn dự án
-```
+1. Mở trực tiếp file `index.html` bằng trình duyệt web (Chrome, Edge, Firefox...) hoặc chạy qua web server tĩnh (`python -m http.server`).
+2. Ứng dụng tự động kết nối và đọc dữ liệu từ ThingSpeak Channel `3576953`.

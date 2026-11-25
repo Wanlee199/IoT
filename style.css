@@ -42,6 +42,7 @@ body {
 }
 .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--safe); }
 .dot.paused { background: #94a3b8; }
+.dot.err { background: var(--danger); }
 
 main {
   max-width: 1200px;
@@ -140,13 +141,54 @@ main {
   text-decoration: line-through;
 }
 
-.horn-group { flex: 1.5; }
+.horn-group { flex: 1.6; }
+.group-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.mode-pill {
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+.mode-pill.auto { background: #dcfce7; color: #15803d; }
+.mode-pill.manual { background: #fef3c7; color: #b45309; }
+.mode-pill.chirp { background: #e0f2fe; color: #0369a1; }
+
 .horn-wrapper {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
+.horn-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 8px;
+}
+.duration-select {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  background: #fff;
+  color: var(--text);
+}
+.btn-auto {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+  color: var(--text);
+  font-weight: 600;
+}
+.hidden { display: none !important; }
 .btn-horn {
+  flex: 1;
+  min-width: 220px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
